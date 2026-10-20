@@ -11,6 +11,21 @@ import (
 )
 
 // RouteContext holds shared state needed by all subsystem route registrars.
+//
+// Internals that previously lived undocumented inside handlerWithSettings:
+//
+//   - RecoveryMode (Props.RecoveryMode): when true, Vault exposes only the
+//     recovery raw/generate-recovery-token surface via registerRecoveryRoutes.
+//     Normal sys/UI/telemetry registrars are not used.
+//
+//   - ChrootNamespace: optional listener chroot that prefixes logical path
+//     resolution inside handleLogical* helpers. Empty means no chroot.
+//
+//   - OperatorNamespace: canonicalized operator namespace path (trailing slash)
+//     prepended into /v1/{ns}sys/... via SysPath. Empty string means root.
+//
+// Registrars must use SysPath (or these fields) instead of recomputing
+// namespace prefixes ad hoc.
 type RouteContext struct {
 	Core              *vault.Core
 	Mux               *http.ServeMux
@@ -43,6 +58,7 @@ func NewRouteContext(props *vault.HandlerProperties, settings handlerSettings) *
 }
 
 // SysPath returns the versioned, namespace-prefixed path for a sys endpoint.
+// Example: SysPath("init") → "/v1/sys/init" or "/v1/admin/sys/init".
 func (rc *RouteContext) SysPath(suffix string) string {
 	return "/v1/" + rc.OperatorNamespace + "sys/" + suffix
 }

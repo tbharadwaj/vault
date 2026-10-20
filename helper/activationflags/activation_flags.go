@@ -1,6 +1,18 @@
 // Copyright IBM Corp. 2016, 2025
 // SPDX-License-Identifier: BUSL-1.1
 
+// Package activationflags implements operator-facing, storage-persisted
+// product opt-in flags (sys/activation-flags).
+//
+// Use activation flags when a shipped feature must stay off until an operator
+// explicitly activates it. Do NOT use them for:
+//   - pre-GA startup API experiments → helper/experiments
+//   - engineering Strangler Fig cutovers → Core.IsFeatureFlagEnabled
+//
+// Decision record: docs/adr/0001-feature-flag-mechanism-boundaries.md
+//
+// Note: A proposed barrier-persisted FeatureFlagManager CRUD API that
+// duplicates this package is REJECTED for new development (ADR 0001).
 package activationflags
 
 import (

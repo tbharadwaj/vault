@@ -156,12 +156,23 @@ func (c *Core) IsMountTypeAllowed(mountType string) bool {
 }
 
 // IsFlagEnabled returns true if the named flag is set in HCL config feature_flags.
+// On OSS this is always false (feature_flags are enterprise-only in config).
+// See docs/adr/0001-feature-flag-mechanism-boundaries.md.
 func (c *Core) IsFlagEnabled(name string) bool {
 	return false
 }
 
-// IsFeatureFlagEnabled reports whether the named feature flag is enabled.
-// Used by the http-handler-decomposition Strangler Fig gate (WO-102).
+// IsFeatureFlagEnabled reports whether a named engineering/config feature flag
+// is enabled. Prefer this API for Strangler Fig cutovers (e.g.
+// FeatureFlagHTTPHandlerDecomposition).
+//
+// Do not confuse with:
+//   - Core.IsExperimentEnabled (startup pre-GA experiments)
+//   - activationflags.ActivationManager (operator product opt-in)
+//
+// DEPRECATED direction: do not add a parallel barrier-persisted
+// FeatureFlagManager CRUD subsystem; extend this path or activation flags
+// instead (ADR 0001).
 func (c *Core) IsFeatureFlagEnabled(name string) bool {
 	return c.IsFlagEnabled(name)
 }

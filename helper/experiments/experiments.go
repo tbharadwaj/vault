@@ -1,6 +1,14 @@
 // Copyright IBM Corp. 2016, 2025
 // SPDX-License-Identifier: BUSL-1.1
 
+// Package experiments provides startup-only, pre-GA API toggles.
+//
+// Use experiments for alpha surfaces enabled at process start (-experiment /
+// server config). Do NOT use them for:
+//   - operator opt-in after GA → helper/activationflags
+//   - engineering Strangler Fig cutovers → Core.IsFeatureFlagEnabled
+//
+// Decision record: docs/adr/0001-feature-flag-mechanism-boundaries.md
 package experiments
 
 import "slices"

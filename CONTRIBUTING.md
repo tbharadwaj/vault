@@ -135,6 +135,43 @@ And most of all, if you have any questions, please ask!
 If you have never worked with Go before, you will have to complete the
 following steps listed in the README, under the section [Developing Vault][1].
 
+## Language map
+
+Vault spans several languages and config formats. Prefer the home language for
+each layer and avoid introducing a parallel dialect without strong need.
+
+| Layer | Primary languages / formats | Notes |
+|-------|----------------------------|--------|
+| Server core & API | Go | Prefer typed helpers (`RouteContext`, service interfaces) over new ad-hoc Core coupling |
+| UI application | Ember + TypeScript (migrating from JS) + Handlebars | See [TypeScript migration order](ui/docs/typescript-migration.md) — convert shared utils/services before leaf routes |
+| Tests / tooling | Go, Bash | |
+| Server config | HCL (+ JSON where emitted) | |
+| CI / automation | YAML, Bash | |
+
+Mixed JS/TS in `ui/` is transitional debt. Do not add new `.js` modules under
+`ui/app` when a TypeScript equivalent is practical; follow the migration order
+doc so high-traffic shared code loses the dual-paradigm tax first.
+
+## Feature-flag & toggle mechanisms
+
+Vault has **three** supported server-side toggle mechanisms. Using the wrong
+one (or inventing another store) increases cognitive load for every contributor.
+
+| Use case | Mechanism | Entry points |
+|----------|-----------|--------------|
+| Pre-GA / alpha API at process start | **Experiments** | `helper/experiments`, `Core.IsExperimentEnabled` |
+| Operator opt-in after the code has shipped | **Activation flags** | `helper/activationflags`, `sys/activation-flags` |
+| Engineering Strangler Fig / HCL `feature_flags` | **`IsFeatureFlagEnabled`** | `Core.IsFeatureFlagEnabled`, HCL `feature_flags` (enterprise) |
+
+**Rejected for new work:** a barrier-persisted `FeatureFlagManager` CRUD API
+under `sys/feature-flags/` that duplicates activation flags.
+
+Canonical decision record: [ADR 0001](docs/adr/0001-feature-flag-mechanism-boundaries.md).  
+Package map comment: [`vault/feature_flags.go`](vault/feature_flags.go).
+
+Core service extraction (old direct `*Core` access vs new interfaces) is
+documented in [ADR 0002](docs/adr/0002-core-service-interfaces-migration.md)
+and [`vault/core_services_migration.go`](vault/core_services_migration.go).
 
 [1]: https://github.com/hashicorp/vault#developing-vault
 [2]: https://discuss.hashicorp.com/c/vault

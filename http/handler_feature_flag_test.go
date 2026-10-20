@@ -13,7 +13,7 @@ import (
 
 func TestHandlerWithSettings_FeatureFlagDisabledUsesLegacy(t *testing.T) {
 	core, _, _ := vault.TestCoreUnsealed(t)
-	require.False(t, core.IsFeatureFlagEnabled("http-handler-decomposition"),
+	require.False(t, core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition),
 		"flag must be disabled by default for zero behavioral change")
 
 	props := &vault.HandlerProperties{

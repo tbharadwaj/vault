@@ -4040,6 +4040,11 @@ func (c *Core) AuditLogger() AuditLogger {
 	return &basicAuditor{c: c}
 }
 
+// FeatureFlags is internal cluster replication state persisted at
+// consts.CoreFeatureFlagPath (e.g. namespace cubbyhole locality).
+// It is NOT a general product/engineering toggle — do not extend it for
+// feature gating. See vault/feature_flags.go and
+// docs/adr/0001-feature-flag-mechanism-boundaries.md.
 type FeatureFlags struct {
 	NamespacesCubbyholesLocal bool `json:"namespace_cubbyholes_local"`
 }
@@ -4919,6 +4924,9 @@ func (c *Core) SetGroupPolicyApplicationMode(ctx context.Context, mode string) e
 }
 
 // IsExperimentEnabled is true if the experiment is enabled in the core.
+// Experiments are startup-only pre-GA toggles — see helper/experiments and
+// docs/adr/0001-feature-flag-mechanism-boundaries.md (not for product opt-in
+// or Strangler Fig gates).
 func (c *Core) IsExperimentEnabled(experiment string) bool {
 	return strutil.StrListContains(c.experiments, experiment)
 }

@@ -16,6 +16,10 @@ type FeatureFlagsResponse struct {
 	FeatureFlags []string `json:"feature_flags"`
 }
 
+// FeatureFlag_EnvVariables lists client/UI environment hints exposed at
+// sys/internal/ui/feature-flags. This is NOT Vault's server-side gating
+// mechanism — do not add engineering or product toggles here.
+// See docs/adr/0001-feature-flag-mechanism-boundaries.md.
 var FeatureFlag_EnvVariables = [...]string{
 	"VAULT_CLOUD_ADMIN_NAMESPACE",
 }
