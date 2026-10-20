@@ -1,0 +1,47 @@
+name: Route Allowlist & Inventory
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - main
+      - release/**
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-route-allowlist
+  cancel-in-progress: true
+
+jobs:
+  route-allowlist:
+    name: Unauthenticated route allowlist
+    runs-on: ${{ github.repository == 'hashicorp/vault' && 'ubuntu-latest' || fromJSON('["self-hosted","ubuntu-22.04-x64"]') }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/metadata
+        id: metadata
+      - if: steps.metadata.outputs.is-ent-repo == 'true'
+        id: vault-auth
+        name: Vault Authenticate
+        run: vault-auth
+      - if: steps.metadata.outputs.is-ent-repo == 'true'
+        id: vault-secrets
+        name: Fetch Vault Secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ steps.vault-auth.outputs.addr }}
+          caCertificate: ${{ steps.vault-auth.outputs.ca_certificate }}
+          token: ${{ steps.vault-auth.outputs.token }}
+          secrets: |
+            kv/data/github/${{ github.repository }}/github-token token | ELEVATED_GITHUB_TOKEN;
+      - name: Setup Go
+        uses: ./.github/actions/set-up-go
+        with:
+          github-token: ${{ steps.metadata.outputs.is-ent-repo != 'true' && secrets.ELEVATED_GITHUB_TOKEN || steps.vault-secrets.outputs.ELEVATED_GITHUB_TOKEN }}
+      - name: Validate unauthenticated route allowlist
+        run: go test ./http/ -run TestUnauthenticatedRouteAllowlist -count=1
+      - name: Validate legacy vs decomposed route inventory parity
+        run: go test ./http/ -run TestRouteInventoryParity -count=1

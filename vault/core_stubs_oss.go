@@ -159,3 +159,9 @@ func (c *Core) IsMountTypeAllowed(mountType string) bool {
 func (c *Core) IsFlagEnabled(name string) bool {
 	return false
 }
+
+// IsFeatureFlagEnabled reports whether the named feature flag is enabled.
+// Used by the http-handler-decomposition Strangler Fig gate (WO-102).
+func (c *Core) IsFeatureFlagEnabled(name string) bool {
+	return c.IsFlagEnabled(name)
+}
