@@ -21,8 +21,8 @@ Without an explicit migration guide, that dual pattern increases cognitive load
 1. **New code** depends on the smallest interface that satisfies the need.
 2. **Legacy aliases** may remain for compatibility; do not teach them as the
    preferred API in new modules.
-3. Package `vault` carries an always-on guide in
-   `vault/core_services_migration.go` (`go doc` / code search).
+3. Keep this ADR as the migration guide; link it from `vault/feature_flags.go`
+   rather than duplicating a doc-only `.go` file in package vault.
 4. When a field is aliased, comment it as transitional and point at the
    interface accessor.
 
@@ -34,5 +34,4 @@ Without an explicit migration guide, that dual pattern increases cognitive load
 
 ## Related
 
-- `vault/core_services_migration.go`
 - HTTP route Strangler Fig: `http/handler.go` + `http/handler_legacy.go`

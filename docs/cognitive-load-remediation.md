@@ -13,7 +13,7 @@ JS→TS dual paradigm).
 | WO-083 / flag map | `vault/feature_flags.go` package guide |
 | WO-102 gate | Decision comment in `http/handler.go` + constant `FeatureFlagHTTPHandlerDecomposition` |
 | Handler internals | Expanded `RouteContext` docs in `http/handler_helpers.go` |
-| WO-118 Core dual access | `vault/core_services_migration.go` + [ADR 0002](adr/0002-core-service-interfaces-migration.md) |
+| WO-118 Core dual access | [ADR 0002](adr/0002-core-service-interfaces-migration.md) |
 
 ### Strategy 2 — Flag mechanism consolidation (highest ROI)
 

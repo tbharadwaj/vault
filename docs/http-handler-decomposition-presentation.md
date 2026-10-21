@@ -179,10 +179,7 @@ Test: `handler_recovery_test.go`
 | Registrar | File | Behavior |
 |-----------|------|----------|
 | Auth | `handler_auth.go` | DR op token routes when `unauthDROperationToken` |
-| Secrets | `handler_secrets.go` | **No-op** extension point |
-| Identity | `handler_identity.go` | **No-op** extension point |
-
-Secrets/identity still flow through the catch-all `handleLogical` / radix router until further extraction.
+| Secrets / identity | via `registerSystemRoutes` `/v1/` catch-all | Dedicated registrars only when routes are extracted |
 
 ---
 
@@ -204,16 +201,13 @@ Secrets/identity still flow through the catch-all `handleLogical` / radix router
 # WO-102 — Feature-flag gate
 
 ```go
-if rc.Core.IsFeatureFlagEnabled("http-handler-decomposition") {
-    // Decomposed path — Strangler Fig
-    registerSystemRoutes(rc)
+if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
+    registerSystemRoutes(rc) // secrets/identity via /v1/ catch-all
     registerAuthRoutes(rc)
-    registerSecretsRoutes(rc)
-    registerIdentityRoutes(rc)
     registerUIRoutes(rc)
     registerTelemetryRoutes(rc)
 } else {
-    registerLegacyRoutes(rc)  // verbatim fallback
+    registerLegacyRoutes(rc)
 }
 ```
 

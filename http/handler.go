@@ -299,27 +299,15 @@ func handlerWithSettings(props *vault.HandlerProperties, settings handlerSetting
 
 	switch {
 	case props.RecoveryMode:
-		// Recovery mode is a separate listener path: only raw + recovery-token
-		// routes are registered. See RouteContext docs in handler_helpers.go.
 		registerRecoveryRoutes(rc)
 	default:
-		// Flag mechanism decision (which toggle to use when):
-		//   - Engineering Strangler Fig cutovers → IsFeatureFlagEnabled
-		//     (here: vault.FeatureFlagHTTPHandlerDecomposition).
-		//   - Operator product opt-in → activation flags (NOT this gate).
-		//   - Pre-GA startup APIs → experiments (NOT this gate).
-		// Full map: docs/adr/0001-feature-flag-mechanism-boundaries.md and
-		// vault/feature_flags.go.
+		// Engineering Strangler Fig gate only — see vault/feature_flags.go.
 		if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
-			// Decomposed path — Strangler Fig
-			registerSystemRoutes(rc)
+			registerSystemRoutes(rc) // includes secrets/identity via /v1/ catch-all
 			registerAuthRoutes(rc)
-			registerSecretsRoutes(rc)
-			registerIdentityRoutes(rc)
 			registerUIRoutes(rc)
 			registerTelemetryRoutes(rc)
 		} else {
-			// Legacy monolithic path (preserved as fallback)
 			registerLegacyRoutes(rc)
 		}
 	}

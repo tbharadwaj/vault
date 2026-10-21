@@ -170,8 +170,7 @@ Canonical decision record: [ADR 0001](docs/adr/0001-feature-flag-mechanism-bound
 Package map comment: [`vault/feature_flags.go`](vault/feature_flags.go).
 
 Core service extraction (old direct `*Core` access vs new interfaces) is
-documented in [ADR 0002](docs/adr/0002-core-service-interfaces-migration.md)
-and [`vault/core_services_migration.go`](vault/core_services_migration.go).
+documented in [ADR 0002](docs/adr/0002-core-service-interfaces-migration.md).
 
 [1]: https://github.com/hashicorp/vault#developing-vault
 [2]: https://discuss.hashicorp.com/c/vault

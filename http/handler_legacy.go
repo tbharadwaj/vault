@@ -11,9 +11,10 @@ import (
 	gziphandler "github.com/klauspost/compress/gzhttp"
 )
 
-// registerLegacyRoutes preserves the pre-decomposition monolithic route
-// registrations as a Strangler Fig fallback when the
-// http-handler-decomposition feature flag is disabled.
+// registerLegacyRoutes is the transitional fallback used while
+// FeatureFlagHTTPHandlerDecomposition is off. Prefer the decomposed
+// registrars for new route work; do not extend this function except to
+// keep parity until the flag is the default.
 func registerLegacyRoutes(rc *RouteContext) {
 	core := rc.Core
 	mux := rc.Mux
