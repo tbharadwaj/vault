@@ -179,8 +179,8 @@ Test: `handler_recovery_test.go`
 | Registrar | File | Behavior |
 |-----------|------|----------|
 | Auth | `handler_auth.go` | DR op token routes when `unauthDROperationToken` |
-| Secrets | `handler_secrets.go` | Owns shared `/v1/` logical catch-all |
-| Identity | `handler_identity.go` | Same catch-all (idempotent); keeps subsystem call site |
+| Secrets | `handler_secrets.go` | Owns `/v1/` logical catch-all |
+| Identity | `handler_identity.go` | Subsystem seam; requires secrets registrar first |
 
 ---
 

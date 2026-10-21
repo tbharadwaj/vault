@@ -79,8 +79,7 @@ func registerSystemRoutes(rc *RouteContext) {
 				handleLogicalWithInjector(core, rc.ChrootNamespace)))
 	}
 
-	// Catch-all for remaining sys/ paths. Non-sys logical mounts (/v1/) are
-	// owned by registerSecretsRoutes / registerIdentityRoutes.
+	// Remaining /v1/sys/* paths. Non-sys /v1/* is owned by registerSecretsRoutes.
 	rc.Mux.Handle(rc.SysPath(""),
 		handleRequestForwarding(core, handleLogical(core, rc.ChrootNamespace)))
 }

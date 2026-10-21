@@ -13,35 +13,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegisterSecretsAndIdentityRoutes_ShareV1CatchAll(t *testing.T) {
+func TestRegisterSecretsRoutes_OwnsV1CatchAll(t *testing.T) {
 	core, _, _ := vault.TestCoreUnsealed(t)
-	props := &vault.HandlerProperties{
+	rc := NewRouteContext(&vault.HandlerProperties{
 		Core:           core,
 		ListenerConfig: &configutil.Listener{},
-	}
-	rc := NewRouteContext(props, handlerSettings{})
+	}, handlerSettings{})
 
 	registerSecretsRoutes(rc)
-	registerIdentityRoutes(rc) // idempotent; must not panic on second call
+	registerIdentityRoutes(rc)
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/secret/foo", nil)
 	_, pattern := rc.Mux.Handler(req)
 	require.Equal(t, "/v1/", pattern)
-	require.True(t, rc.v1LogicalCatchAllSet)
+	require.True(t, rc.logicalAPICatchAllRegistered)
+}
+
+func TestRegisterIdentityRoutes_RequiresSecretsFirst(t *testing.T) {
+	core, _, _ := vault.TestCoreUnsealed(t)
+	rc := NewRouteContext(&vault.HandlerProperties{
+		Core:           core,
+		ListenerConfig: &configutil.Listener{},
+	}, handlerSettings{})
+
+	require.Panics(t, func() { registerIdentityRoutes(rc) })
+	registerSecretsRoutes(rc)
+	require.NotPanics(t, func() { registerIdentityRoutes(rc) })
 }
 
 func TestRegisterSystemRoutes_DoesNotOwnV1CatchAll(t *testing.T) {
 	core, _, _ := vault.TestCoreUnsealed(t)
-	props := &vault.HandlerProperties{
+	rc := NewRouteContext(&vault.HandlerProperties{
 		Core:           core,
 		ListenerConfig: &configutil.Listener{},
-	}
-	rc := NewRouteContext(props, handlerSettings{})
+	}, handlerSettings{})
 	registerSystemRoutes(rc)
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/secret/foo", nil)
 	_, pattern := rc.Mux.Handler(req)
-	// sys catch-all is /v1/sys/; non-sys logical paths need secrets/identity registrars
 	require.NotEqual(t, "/v1/", pattern)
-	require.False(t, rc.v1LogicalCatchAllSet)
+	require.False(t, rc.logicalAPICatchAllRegistered)
 }

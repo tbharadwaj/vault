@@ -3,10 +3,11 @@
 
 package http
 
-// registerIdentityRoutes owns the identity HTTP surface.
-// Identity mounts share the /v1/ logical catch-all with secrets engines; the
-// registration is idempotent so both registrars remain first-class call sites
-// without concentrating ownership back into registerSystemRoutes.
+// registerIdentityRoutes is the identity subsystem's registrar call site.
+// Identity paths ride the /v1/ catch-all owned by registerSecretsRoutes until
+// dedicated identity routes are extracted — so secrets must register first.
 func registerIdentityRoutes(rc *RouteContext) {
-	rc.registerV1LogicalCatchAll()
+	if !rc.logicalAPICatchAllRegistered {
+		panic("registerIdentityRoutes: registerSecretsRoutes must run first")
+	}
 }

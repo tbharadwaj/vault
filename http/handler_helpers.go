@@ -10,22 +10,12 @@ import (
 	"github.com/hashicorp/vault/vault"
 )
 
-// RouteContext holds shared state needed by all subsystem route registrars.
+// RouteContext is the shared input for every subsystem route registrar.
 //
-// Internals that previously lived undocumented inside handlerWithSettings:
-//
-//   - RecoveryMode (Props.RecoveryMode): when true, Vault exposes only the
-//     recovery raw/generate-recovery-token surface via registerRecoveryRoutes.
-//     Normal sys/UI/telemetry registrars are not used.
-//
-//   - ChrootNamespace: optional listener chroot that prefixes logical path
-//     resolution inside handleLogical* helpers. Empty means no chroot.
-//
-//   - OperatorNamespace: canonicalized operator namespace path (trailing slash)
-//     prepended into /v1/{ns}sys/... via SysPath. Empty string means root.
-//
-// Registrars must use SysPath (or these fields) instead of recomputing
-// namespace prefixes ad hoc.
+//	RecoveryMode (Props) — only recovery routes; see registerRecoveryRoutes
+//	ChrootNamespace      — listener chroot for handleLogical* ("" = none)
+//	OperatorNamespace    — canonical "ns/" prefix for SysPath ("" = root)
+//	logicalAPICatchAllRegistered — set by registerSecretsRoutes for /v1/
 type RouteContext struct {
 	Core              *vault.Core
 	Mux               *http.ServeMux
@@ -34,25 +24,10 @@ type RouteContext struct {
 	Settings          handlerSettings
 	Props             *vault.HandlerProperties
 
-	// v1LogicalCatchAllSet is set when the /v1/ logical catch-all has been
-	// registered. Secrets and identity registrars share that single Handle.
-	v1LogicalCatchAllSet bool
+	logicalAPICatchAllRegistered bool
 }
 
-// registerV1LogicalCatchAll mounts the catch-all for logical backends (secrets
-// engines, identity, and other router-mounted paths). Idempotent so multiple
-// subsystem registrars can declare ownership without double-registering.
-func (rc *RouteContext) registerV1LogicalCatchAll() {
-	if rc.v1LogicalCatchAllSet {
-		return
-	}
-	rc.Mux.Handle("/v1/",
-		handleRequestForwarding(rc.Core, handleLogical(rc.Core, rc.ChrootNamespace)))
-	rc.v1LogicalCatchAllSet = true
-}
-
-// NewRouteContext extracts the common namespace-prefix and chroot
-// injection values from HandlerProperties.
+// NewRouteContext builds a RouteContext from listener/core handler properties.
 func NewRouteContext(props *vault.HandlerProperties, settings handlerSettings) *RouteContext {
 	core := props.Core
 	var chrootNamespace string
@@ -73,8 +48,7 @@ func NewRouteContext(props *vault.HandlerProperties, settings handlerSettings) *
 	}
 }
 
-// SysPath returns the versioned, namespace-prefixed path for a sys endpoint.
-// Example: SysPath("init") → "/v1/sys/init" or "/v1/admin/sys/init".
+// SysPath returns "/v1/{operatorNamespace}sys/{suffix}".
 func (rc *RouteContext) SysPath(suffix string) string {
 	return "/v1/" + rc.OperatorNamespace + "sys/" + suffix
 }

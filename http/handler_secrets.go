@@ -3,9 +3,14 @@
 
 package http
 
-// registerSecretsRoutes owns the secrets-engine HTTP surface.
-// Mount-specific paths are dispatched by the radix router behind the shared
-// /v1/ logical catch-all (see RouteContext.registerV1LogicalCatchAll).
+// registerSecretsRoutes owns the /v1/ logical catch-all used by secrets
+// engines (and other router-mounted backends until they are extracted).
+// Mount-specific dispatch remains in Vault's radix router behind this Handle.
 func registerSecretsRoutes(rc *RouteContext) {
-	rc.registerV1LogicalCatchAll()
+	if rc.logicalAPICatchAllRegistered {
+		return
+	}
+	rc.Mux.Handle("/v1/",
+		handleRequestForwarding(rc.Core, handleLogical(rc.Core, rc.ChrootNamespace)))
+	rc.logicalAPICatchAllRegistered = true
 }

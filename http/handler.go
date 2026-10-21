@@ -301,12 +301,13 @@ func handlerWithSettings(props *vault.HandlerProperties, settings handlerSetting
 	case props.RecoveryMode:
 		registerRecoveryRoutes(rc)
 	default:
-		// Engineering Strangler Fig gate only — see vault/feature_flags.go.
+		// Engineering Strangler Fig gate — see vault/feature_flags.go.
 		if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
-			registerSystemRoutes(rc)
-			registerAuthRoutes(rc)
-			registerSecretsRoutes(rc)
-			registerIdentityRoutes(rc)
+			// Specific → shared catch-all → UI → telemetry.
+			registerSystemRoutes(rc)   // /v1/sys/...
+			registerAuthRoutes(rc)     // enterprise DR token routes
+			registerSecretsRoutes(rc)  // owns /v1/ logical catch-all
+			registerIdentityRoutes(rc) // identity seam (requires secrets first)
 			registerUIRoutes(rc)
 			registerTelemetryRoutes(rc)
 		} else {
