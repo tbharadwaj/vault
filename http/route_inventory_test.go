@@ -85,6 +85,8 @@ func TestRouteInventoryParity(t *testing.T) {
 	decomposedRC := NewRouteContext(props, settings)
 	registerSystemRoutes(decomposedRC)
 	registerAuthRoutes(decomposedRC)
+	registerSecretsRoutes(decomposedRC)
+	registerIdentityRoutes(decomposedRC)
 	registerUIRoutes(decomposedRC)
 	registerTelemetryRoutes(decomposedRC)
 	decomposedRoutes := extractRegisteredRoutes(decomposedRC.Mux)

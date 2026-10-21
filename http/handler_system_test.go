@@ -48,7 +48,6 @@ func TestRegisterSystemRoutes_ExpectedSysPaths(t *testing.T) {
 		"/v1/sys/storage/raft/join",
 		"/v1/sys/internal/ui/feature-flags",
 		"/v1/sys/",
-		"/v1/",
 	}
 	for _, path := range paths {
 		req := httptest.NewRequest(http.MethodGet, path, nil)

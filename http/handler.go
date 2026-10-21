@@ -303,8 +303,10 @@ func handlerWithSettings(props *vault.HandlerProperties, settings handlerSetting
 	default:
 		// Engineering Strangler Fig gate only — see vault/feature_flags.go.
 		if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
-			registerSystemRoutes(rc) // includes secrets/identity via /v1/ catch-all
+			registerSystemRoutes(rc)
 			registerAuthRoutes(rc)
+			registerSecretsRoutes(rc)
+			registerIdentityRoutes(rc)
 			registerUIRoutes(rc)
 			registerTelemetryRoutes(rc)
 		} else {

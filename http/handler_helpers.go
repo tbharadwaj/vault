@@ -33,6 +33,22 @@ type RouteContext struct {
 	ChrootNamespace   string
 	Settings          handlerSettings
 	Props             *vault.HandlerProperties
+
+	// v1LogicalCatchAllSet is set when the /v1/ logical catch-all has been
+	// registered. Secrets and identity registrars share that single Handle.
+	v1LogicalCatchAllSet bool
+}
+
+// registerV1LogicalCatchAll mounts the catch-all for logical backends (secrets
+// engines, identity, and other router-mounted paths). Idempotent so multiple
+// subsystem registrars can declare ownership without double-registering.
+func (rc *RouteContext) registerV1LogicalCatchAll() {
+	if rc.v1LogicalCatchAllSet {
+		return
+	}
+	rc.Mux.Handle("/v1/",
+		handleRequestForwarding(rc.Core, handleLogical(rc.Core, rc.ChrootNamespace)))
+	rc.v1LogicalCatchAllSet = true
 }
 
 // NewRouteContext extracts the common namespace-prefix and chroot

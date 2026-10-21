@@ -179,7 +179,8 @@ Test: `handler_recovery_test.go`
 | Registrar | File | Behavior |
 |-----------|------|----------|
 | Auth | `handler_auth.go` | DR op token routes when `unauthDROperationToken` |
-| Secrets / identity | via `registerSystemRoutes` `/v1/` catch-all | Dedicated registrars only when routes are extracted |
+| Secrets | `handler_secrets.go` | Owns shared `/v1/` logical catch-all |
+| Identity | `handler_identity.go` | Same catch-all (idempotent); keeps subsystem call site |
 
 ---
 
@@ -202,8 +203,10 @@ Test: `handler_recovery_test.go`
 
 ```go
 if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
-    registerSystemRoutes(rc) // secrets/identity via /v1/ catch-all
+    registerSystemRoutes(rc)
     registerAuthRoutes(rc)
+    registerSecretsRoutes(rc)
+    registerIdentityRoutes(rc)
     registerUIRoutes(rc)
     registerTelemetryRoutes(rc)
 } else {

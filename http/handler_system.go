@@ -79,10 +79,8 @@ func registerSystemRoutes(rc *RouteContext) {
 				handleLogicalWithInjector(core, rc.ChrootNamespace)))
 	}
 
-	// Catch-all sys/ and /v1/ routes. Secrets engines and identity are served
-	// here via the radix router until they warrant dedicated registrars.
+	// Catch-all for remaining sys/ paths. Non-sys logical mounts (/v1/) are
+	// owned by registerSecretsRoutes / registerIdentityRoutes.
 	rc.Mux.Handle(rc.SysPath(""),
-		handleRequestForwarding(core, handleLogical(core, rc.ChrootNamespace)))
-	rc.Mux.Handle("/v1/",
 		handleRequestForwarding(core, handleLogical(core, rc.ChrootNamespace)))
 }
