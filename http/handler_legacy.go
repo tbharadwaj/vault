@@ -22,24 +22,28 @@ func registerLegacyRoutes(rc *RouteContext) {
 	operatorNamespace := rc.OperatorNamespace
 	props := rc.Props
 	settings := rc.Settings
+	lc := props.ListenerConfig
 
 	// Handle non-forwarded paths
 	mux.Handle("/v1/"+operatorNamespace+"sys/config/state/", handleLogicalNoForward(core, chrootNamespace))
 	mux.Handle("/v1/"+operatorNamespace+"sys/host-info", handleLogicalNoForward(core, chrootNamespace))
 
 	mux.Handle("/v1/"+operatorNamespace+"sys/init", handleSysInit(core))
-	mux.Handle("/v1/"+operatorNamespace+"sys/seal-status", handleSysSealStatus(core,
-		WithRedactClusterName(props.ListenerConfig.RedactClusterName),
-		WithRedactVersion(props.ListenerConfig.RedactVersion)))
-	mux.Handle("/v1/"+operatorNamespace+"sys/seal-backend-status", handleSysSealBackendStatus(core))
-	mux.Handle("/v1/"+operatorNamespace+"sys/seal", handleSysSeal(core))
-	mux.Handle("/v1/"+operatorNamespace+"sys/step-down", handleRequestForwarding(core, handleSysStepDown(core)))
-	mux.Handle("/v1/"+operatorNamespace+"sys/unseal", handleSysUnseal(core))
+
+	var sealOpts []ListenerConfigOption
+	if lc != nil {
+		sealOpts = []ListenerConfigOption{
+			WithRedactClusterName(lc.RedactClusterName),
+			WithRedactVersion(lc.RedactVersion),
+		}
+	}
+	RegisterSealRoutes(mux, core, sealOpts...)
+
 	mux.Handle("/v1/"+operatorNamespace+"sys/leader", handleSysLeader(core,
-		WithRedactAddresses(props.ListenerConfig.RedactAddresses)))
+		WithRedactAddresses(lc != nil && lc.RedactAddresses)))
 	mux.Handle("/v1/"+operatorNamespace+"sys/health", handleSysHealth(core,
-		WithRedactClusterName(props.ListenerConfig.RedactClusterName),
-		WithRedactVersion(props.ListenerConfig.RedactVersion)))
+		WithRedactClusterName(lc != nil && lc.RedactClusterName),
+		WithRedactVersion(lc != nil && lc.RedactVersion)))
 	mux.Handle("/v1/"+operatorNamespace+"sys/monitor", handleLogicalNoForward(core, chrootNamespace))
 
 	// Register generate-root endpoints as unauthenticated handlers only if unauthGenerateRoot is true.
@@ -66,11 +70,11 @@ func registerLegacyRoutes(rc *RouteContext) {
 	mux.Handle("/v1/"+operatorNamespace+"sys/storage/raft/join", handleSysRaftJoin(core))
 	mux.Handle("/v1/"+operatorNamespace+"sys/internal/ui/feature-flags", handleSysInternalFeatureFlags(core))
 
-	for _, path := range injectDataIntoTopRoutes {
-		mux.Handle(path, handleRequestForwarding(core, handleLogicalWithInjector(core, chrootNamespace)))
-	}
-	mux.Handle("/v1/"+operatorNamespace+"sys/", handleRequestForwarding(core, handleLogical(core, chrootNamespace)))
-	mux.Handle("/v1/", handleRequestForwarding(core, handleLogical(core, chrootNamespace)))
+	RegisterSysAuthRoutes(mux, core, chrootNamespace)
+	RegisterSysPolicyRoutes(mux, core, chrootNamespace)
+	registerRemainingTopRouteOverrides(mux, core, chrootNamespace)
+	RegisterLogicalRoutes(mux, core, chrootNamespace)
+
 	if core.UIEnabled() {
 		if uiBuiltIn {
 			mux.Handle("/ui/", http.StripPrefix("/ui/", gziphandler.GzipHandler(handleUIHeaders(core, handleUI(http.FileServer(&UIAssetWrapper{FileSystem: assetFS()}))))))

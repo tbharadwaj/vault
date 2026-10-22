@@ -163,7 +163,7 @@ func isUnauthenticatedCandidate(path string) bool {
 	if _, ok := allowlistExemptPaths[path]; ok {
 		return false
 	}
-	for _, p := range injectDataIntoTopRoutes {
+	for _, p := range TopRouteOverrides {
 		if path == p {
 			return false
 		}

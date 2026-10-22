@@ -161,7 +161,9 @@ var (
 	perMethodAlwaysRedirectPaths  = map[string]*pathmanager.PathManager{}
 	websocketPaths                = pathmanager.New()
 
-	injectDataIntoTopRoutes = []string{
+	// TopRouteOverrides are paths registered with handleLogicalWithInjector
+	// ahead of the /v1/sys/ catch-all so request data is injected at the top level.
+	TopRouteOverrides = []string{
 		"/v1/sys/audit",
 		"/v1/sys/audit/",
 		"/v1/sys/audit-hash/",
@@ -304,12 +306,13 @@ func handlerWithSettings(props *vault.HandlerProperties, settings handlerSetting
 		// Engineering Strangler Fig gate — see vault/feature_flags.go.
 		if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
 			// Specific → shared catch-all → UI → telemetry.
-			registerSystemRoutes(rc)   // /v1/sys/...
-			registerAuthRoutes(rc)     // enterprise DR token routes
-			registerSecretsRoutes(rc)  // owns /v1/ logical catch-all
-			registerIdentityRoutes(rc) // identity seam (requires secrets first)
+			registerSystemRoutes(rc)
+			registerAuthRoutes(rc)
+			registerSecretsRoutes(rc)
+			registerIdentityRoutes(rc)
 			registerUIRoutes(rc)
 			registerTelemetryRoutes(rc)
+			RegisterLogicalRoutes(rc.Mux, rc.Core, rc.ChrootNamespace)
 		} else {
 			registerLegacyRoutes(rc)
 		}

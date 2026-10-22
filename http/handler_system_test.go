@@ -25,6 +25,7 @@ func TestRegisterSystemRoutes_ExpectedSysPaths(t *testing.T) {
 	}
 	rc := NewRouteContext(props, settings)
 	registerSystemRoutes(rc)
+	RegisterLogicalRoutes(rc.Mux, rc.Core, rc.ChrootNamespace)
 
 	paths := []string{
 		"/v1/sys/init",
@@ -47,7 +48,10 @@ func TestRegisterSystemRoutes_ExpectedSysPaths(t *testing.T) {
 		"/v1/sys/storage/raft/bootstrap",
 		"/v1/sys/storage/raft/join",
 		"/v1/sys/internal/ui/feature-flags",
+		"/v1/sys/auth",
+		"/v1/sys/policy",
 		"/v1/sys/",
+		"/v1/",
 	}
 	for _, path := range paths {
 		req := httptest.NewRequest(http.MethodGet, path, nil)

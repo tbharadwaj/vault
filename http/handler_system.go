@@ -4,13 +4,17 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/hashicorp/vault/vault"
 )
 
-// registerSystemRoutes registers all unauthenticated /v1/sys/ routes
-// including conditional generate-root, rekey, and raft endpoints.
+// registerSystemRoutes registers /v1/sys/ routes excluding the catch-alls
+// (see RegisterLogicalRoutes) and including seal, auth/policy top overrides,
+// conditional generate-root/rekey, and raft endpoints.
 func registerSystemRoutes(rc *RouteContext) {
 	core := rc.Core
+	lc := rc.Props.ListenerConfig
 
 	// Non-forwarded paths
 	rc.Mux.Handle(rc.SysPath("config/state/"),
@@ -19,20 +23,21 @@ func registerSystemRoutes(rc *RouteContext) {
 		handleLogicalNoForward(core, rc.ChrootNamespace))
 
 	rc.Mux.Handle(rc.SysPath("init"), handleSysInit(core))
-	rc.Mux.Handle(rc.SysPath("seal-status"), handleSysSealStatus(core,
-		WithRedactClusterName(rc.Props.ListenerConfig.RedactClusterName),
-		WithRedactVersion(rc.Props.ListenerConfig.RedactVersion)))
-	rc.Mux.Handle(rc.SysPath("seal-backend-status"),
-		handleSysSealBackendStatus(core))
-	rc.Mux.Handle(rc.SysPath("seal"), handleSysSeal(core))
-	rc.Mux.Handle(rc.SysPath("step-down"),
-		handleRequestForwarding(core, handleSysStepDown(core)))
-	rc.Mux.Handle(rc.SysPath("unseal"), handleSysUnseal(core))
+
+	var sealOpts []ListenerConfigOption
+	if lc != nil {
+		sealOpts = []ListenerConfigOption{
+			WithRedactClusterName(lc.RedactClusterName),
+			WithRedactVersion(lc.RedactVersion),
+		}
+	}
+	RegisterSealRoutes(rc.Mux, core, sealOpts...)
+
 	rc.Mux.Handle(rc.SysPath("leader"), handleSysLeader(core,
-		WithRedactAddresses(rc.Props.ListenerConfig.RedactAddresses)))
+		WithRedactAddresses(lc != nil && lc.RedactAddresses)))
 	rc.Mux.Handle(rc.SysPath("health"), handleSysHealth(core,
-		WithRedactClusterName(rc.Props.ListenerConfig.RedactClusterName),
-		WithRedactVersion(rc.Props.ListenerConfig.RedactVersion)))
+		WithRedactClusterName(lc != nil && lc.RedactClusterName),
+		WithRedactVersion(lc != nil && lc.RedactVersion)))
 	rc.Mux.Handle(rc.SysPath("monitor"),
 		handleLogicalNoForward(core, rc.ChrootNamespace))
 
@@ -72,14 +77,19 @@ func registerSystemRoutes(rc *RouteContext) {
 	rc.Mux.Handle(rc.SysPath("internal/ui/feature-flags"),
 		handleSysInternalFeatureFlags(core))
 
-	// Data-injection top routes
-	for _, path := range injectDataIntoTopRoutes {
-		rc.Mux.Handle(path,
-			handleRequestForwarding(core,
-				handleLogicalWithInjector(core, rc.ChrootNamespace)))
-	}
+	RegisterSysAuthRoutes(rc.Mux, core, rc.ChrootNamespace)
+	RegisterSysPolicyRoutes(rc.Mux, core, rc.ChrootNamespace)
+	registerRemainingTopRouteOverrides(rc.Mux, core, rc.ChrootNamespace)
+}
 
-	// Remaining /v1/sys/* paths. Non-sys /v1/* is owned by registerSecretsRoutes.
-	rc.Mux.Handle(rc.SysPath(""),
-		handleRequestForwarding(core, handleLogical(core, rc.ChrootNamespace)))
+// registerRemainingTopRouteOverrides registers TopRouteOverrides entries not
+// already handled by RegisterSysAuthRoutes or RegisterSysPolicyRoutes.
+func registerRemainingTopRouteOverrides(mux *http.ServeMux, core *vault.Core, chrootNamespace string) {
+	for _, path := range TopRouteOverrides {
+		if isSysAuthTopRoute(path) || isSysPolicyTopRoute(path) {
+			continue
+		}
+		mux.Handle(path,
+			handleRequestForwarding(core, handleLogicalWithInjector(core, chrootNamespace)))
+	}
 }

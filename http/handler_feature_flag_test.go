@@ -48,6 +48,7 @@ func TestHandlerWithSettings_DecomposedRegistrarsParityWithLegacy(t *testing.T) 
 	registerIdentityRoutes(decomposedRC)
 	registerUIRoutes(decomposedRC)
 	registerTelemetryRoutes(decomposedRC)
+	RegisterLogicalRoutes(decomposedRC.Mux, decomposedRC.Core, decomposedRC.ChrootNamespace)
 	decomposedRoutes := extractRegisteredRoutes(decomposedRC.Mux)
 
 	require.Equal(t, legacyRoutes, decomposedRoutes,

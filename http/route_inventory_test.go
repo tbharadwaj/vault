@@ -65,7 +65,7 @@ func routeInventoryCandidates() []string {
 		"/v1/sys/pprof/trace",
 	}
 	candidates = append(candidates, UnauthenticatedRoutes...)
-	candidates = append(candidates, injectDataIntoTopRoutes...)
+	candidates = append(candidates, TopRouteOverrides...)
 	for _, name := range []string{"goroutine", "threadcreate", "heap", "allocs", "block", "mutex"} {
 		candidates = append(candidates, "/v1/sys/pprof/"+name)
 	}
@@ -89,6 +89,7 @@ func TestRouteInventoryParity(t *testing.T) {
 	registerIdentityRoutes(decomposedRC)
 	registerUIRoutes(decomposedRC)
 	registerTelemetryRoutes(decomposedRC)
+	RegisterLogicalRoutes(decomposedRC.Mux, decomposedRC.Core, decomposedRC.ChrootNamespace)
 	decomposedRoutes := extractRegisteredRoutes(decomposedRC.Mux)
 
 	// Diff

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegisterSecretsRoutes_OwnsV1CatchAll(t *testing.T) {
+func TestRegisterLogicalRoutes_OwnsCatchAlls(t *testing.T) {
 	core, _, _ := vault.TestCoreUnsealed(t)
 	rc := NewRouteContext(&vault.HandlerProperties{
 		Core:           core,
@@ -22,11 +22,15 @@ func TestRegisterSecretsRoutes_OwnsV1CatchAll(t *testing.T) {
 
 	registerSecretsRoutes(rc)
 	registerIdentityRoutes(rc)
+	RegisterLogicalRoutes(rc.Mux, rc.Core, rc.ChrootNamespace)
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/secret/foo", nil)
 	_, pattern := rc.Mux.Handler(req)
 	require.Equal(t, "/v1/", pattern)
-	require.True(t, rc.logicalAPICatchAllRegistered)
+
+	req = httptest.NewRequest(http.MethodGet, "/v1/sys/foo", nil)
+	_, pattern = rc.Mux.Handler(req)
+	require.Equal(t, "/v1/sys/", pattern)
 }
 
 func TestRegisterIdentityRoutes_RequiresSecretsFirst(t *testing.T) {
@@ -52,5 +56,22 @@ func TestRegisterSystemRoutes_DoesNotOwnV1CatchAll(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/secret/foo", nil)
 	_, pattern := rc.Mux.Handler(req)
 	require.NotEqual(t, "/v1/", pattern)
-	require.False(t, rc.logicalAPICatchAllRegistered)
+}
+
+func TestRegisterSealRoutes_RegistersFivePaths(t *testing.T) {
+	core, _, _ := vault.TestCoreUnsealed(t)
+	mux := http.NewServeMux()
+	RegisterSealRoutes(mux, core)
+
+	for _, path := range []string{
+		"/v1/sys/seal",
+		"/v1/sys/unseal",
+		"/v1/sys/seal-status",
+		"/v1/sys/seal-backend-status",
+		"/v1/sys/step-down",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		_, pattern := mux.Handler(req)
+		require.NotEmpty(t, pattern, "expected seal route %s", path)
+	}
 }

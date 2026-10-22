@@ -11,10 +11,35 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/errwrap"
+	"github.com/hashicorp/vault/internalshared/namespace"
 	"github.com/hashicorp/vault/sdk/helper/consts"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/hashicorp/vault/vault"
 )
+
+// RegisterSealRoutes registers the five seal-related sys routes:
+// /v1/sys/seal, /v1/sys/unseal, /v1/sys/seal-status, /v1/sys/seal-backend-status,
+// and /v1/sys/step-down (with operator-namespace prefix when configured).
+// opts are applied to seal-status redaction (e.g. WithRedactClusterName).
+func RegisterSealRoutes(mux *http.ServeMux, core *vault.Core, opts ...ListenerConfigOption) {
+	base := operatorSysBase(core)
+	mux.Handle(base+"seal-status", handleSysSealStatus(core, opts...))
+	mux.Handle(base+"seal-backend-status", handleSysSealBackendStatus(core))
+	mux.Handle(base+"seal", handleSysSeal(core))
+	mux.Handle(base+"step-down", handleRequestForwarding(core, handleSysStepDown(core)))
+	mux.Handle(base+"unseal", handleSysUnseal(core))
+}
+
+// operatorSysBase returns "/v1/sys/" or "/v1/{operatorNamespace}sys/".
+func operatorSysBase(core *vault.Core) string {
+	if core == nil {
+		return "/v1/sys/"
+	}
+	if p := core.OperatorNamespacePath(); p != "" {
+		return "/v1/" + namespace.Canonicalize(p) + "sys/"
+	}
+	return "/v1/sys/"
+}
 
 func handleSysSeal(core *vault.Core) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
