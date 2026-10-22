@@ -254,6 +254,7 @@ type handlerSettings struct {
 	unauthRekey            bool
 	unauthGenerateRoot     bool
 	unauthDROperationToken bool
+	useDecomposedRoutes    bool
 }
 
 func getHandlerSettings(core *vault.Core) handlerSettings {
@@ -261,6 +262,7 @@ func getHandlerSettings(core *vault.Core) handlerSettings {
 		unauthRekey:            core.GetEnableUnauthRekey(),
 		unauthGenerateRoot:     core.GetEnableUnauthGenerateRoot(),
 		unauthDROperationToken: core.GetEnableUnauthDROperationToken(),
+		useDecomposedRoutes:    core.GetUseDecomposedRoutes(),
 	}
 }
 
@@ -303,10 +305,11 @@ func handlerWithSettings(props *vault.HandlerProperties, settings handlerSetting
 	case props.RecoveryMode:
 		registerRecoveryRoutes(rc)
 	default:
-		// Engineering Strangler Fig gate — see vault/feature_flags.go.
-		if rc.Core.IsFeatureFlagEnabled(vault.FeatureFlagHTTPHandlerDecomposition) {
-			// Specific → shared catch-all → UI → telemetry.
-			registerSystemRoutes(rc)
+		// useDecomposedRoutes is toggled at runtime via
+		// PUT /v1/sys/feature-flags/use-decomposed-routes (sudo). handler()
+		// rebuilds this mux when getHandlerSettings observes a change.
+		if settings.useDecomposedRoutes {
+			registerSystemRoutes(rc) // includes RegisterSealRoutes, auth/policy tops
 			registerAuthRoutes(rc)
 			registerSecretsRoutes(rc)
 			registerIdentityRoutes(rc)

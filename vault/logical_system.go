@@ -204,6 +204,7 @@ func NewSystemBackend(core *Core, logger log.Logger, config *logical.BackendConf
 				"seal",
 				"step-down",
 				"config/oauth-resource-server/*",
+				"feature-flags/use-decomposed-routes",
 			},
 
 			Unauthenticated: unauthenticatedPaths,
@@ -295,6 +296,7 @@ func operatorSystemBackendPaths(b *SystemBackend) []*framework.Path {
 	ret = append(ret, b.releaseInfoPaths()...)
 	ret = append(ret, b.vaultVersionsPaths()...)
 	ret = append(ret, b.activationFlagsPaths()...)
+	ret = append(ret, b.httpFeatureFlagPaths()...)
 	ret = append(ret, b.useCaseConsumptionBillingPaths()...)
 
 	if b.Core.rawEnabled {

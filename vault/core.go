@@ -291,6 +291,10 @@ type Core struct {
 	// endpoints (false, default).
 	enableUnauthDROperationToken *atomic.Bool
 
+	// useDecomposedRoutes gates HTTP handler Strangler Fig registrars.
+	// Persisted at UseDecomposedRoutesBarrierPath; default false.
+	useDecomposedRoutes *atomic.Bool
+
 	// HABackend may be available depending on the physical backend
 	ha physical.HABackend
 
@@ -1242,6 +1246,7 @@ func CreateCore(conf *CoreConfig) (*Core, error) {
 		enableUnauthRekey:               new(atomic.Bool),
 		enableUnauthGenerateRoot:        new(atomic.Bool),
 		enableUnauthDROperationToken:    new(atomic.Bool),
+		useDecomposedRoutes:             new(atomic.Bool),
 		denySlashInTemplatedPolicyPaths: conf.DenySlashInTemplatedPolicyPaths,
 		certCountConsumerJobInterval:    conf.CertCountConsumerJobInterval,
 		synctest:                        conf.Synctest,
@@ -3111,6 +3116,10 @@ func (c *Core) postUnseal(ctx context.Context, unsealer UnsealStrategy) (retErr 
 	// previous state.
 	if err := c.loadVersionHistory(ctx); err != nil {
 		return err
+	}
+
+	if err := c.loadUseDecomposedRoutesFromBarrier(ctx); err != nil {
+		c.logger.Warn("failed to load use-decomposed-routes flag", "error", err)
 	}
 
 	if err := unsealer.unseal(ctx, c.logger, c); err != nil {
